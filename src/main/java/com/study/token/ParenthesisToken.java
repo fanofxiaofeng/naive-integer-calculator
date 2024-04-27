@@ -2,7 +2,7 @@ package com.study.token;
 
 import com.study.Parenthesis;
 
-public class ParenthesisToken implements Token {
+public final class ParenthesisToken implements Token {
 
     private final Parenthesis parenthesis;
 

@@ -1,6 +1,9 @@
 package com.study.token;
 
-public interface Token {
+public sealed interface Token
+        permits NumberToken,
+        ParenthesisToken,
+        OperatorToken {
     TokenType getType();
 }
 

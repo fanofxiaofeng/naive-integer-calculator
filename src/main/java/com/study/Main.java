@@ -16,6 +16,7 @@ public class Main {
             byte[] bytes = inputStream.readAllBytes();
             String raw = new String(bytes, StandardCharsets.UTF_8);
 
+            // Step 1: Lexical analyze
             LexicalAnalyzer lexicalAnalyzer = new LexicalAnalyzer();
             List<Token> tokens = lexicalAnalyzer.analyze(new PeekingIterator<>(raw.codePoints().iterator()));
 
@@ -23,10 +24,14 @@ public class Main {
 //                System.out.println(token);
 //            }
 
+            // Step 2: Parse
             Parser parser = new Parser();
             Node node = parser.parse(tokens);
+
+            // Step 3: Calculate with parse result
             Calculator calculator = new Calculator();
             BigInteger result = calculator.calculate(node);
+            
             System.out.println(result);
         }
     }
