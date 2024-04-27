@@ -12,66 +12,85 @@ import java.util.List;
 public class Parser {
 
     public Node parse(List<Token> tokens) {
-        return doParse(new PeekingIterator<>(tokens.iterator()), true);
+        return parse(new PeekingIterator<>(tokens.iterator()));
     }
 
-    private Node doParse(PeekingIterator<Token> tokens, boolean operatorAware) {
+    /**
+     * Parse a "Number Equivalent" node
+     * <p>
+     * We treat a number node and a parenthesis node as "Number Equivalent" node.
+     * When a number node appears, we can always replace it with some equivalent parenthesis node.
+     * So number node and parenthesis node are "equivalent" based on this observation.
+     */
+    private Node parseNumberEquivalent(PeekingIterator<Token> tokens) {
         if (!tokens.hasNext()) {
             throw new IllegalArgumentException("tokens have no more elements!");
         }
 
         Token token = tokens.peek();
-        Node numberEquivalent = switch (token.getType()) {
+        return switch (token.getType()) {
             case PARENTHESIS -> buildParenthesisNode(tokens);
             case NUMBER -> buildNumberNode(tokens);
             default -> throw new IllegalArgumentException(String.format("Unexpected TokenType: %s", token.getType()));
         };
+    }
 
-        if (!operatorAware) {
-            return numberEquivalent;
+    private Node parse(PeekingIterator<Token> tokens) {
+        if (!tokens.hasNext()) {
+            throw new IllegalArgumentException("tokens have no more elements!");
         }
 
-        Node previousNode = numberEquivalent;
+        Node previousNode = parseNumberEquivalent(tokens);
         while (true) {
             if (!tokens.hasNext()) {
                 return previousNode;
             }
+
             Token peek = tokens.peek();
             // ')'
             if (peek.getType() == TokenType.PARENTHESIS) {
                 return previousNode;
             }
+
             if (peek.getType() == TokenType.OPERATOR) {
                 OperatorToken operatorToken = (OperatorToken) tokens.next();
-                Operator currentOperator = operatorToken.operator();
-                Node rightChild = doParse(tokens, false);
+                Node rightChild = parseNumberEquivalent(tokens);
                 if (previousNode.getType() == NodeType.OPERATION) {
                     if (!(previousNode instanceof OperationNode)) {
                         throw new IllegalArgumentException();
                     }
-
-                    Operator previousOperator = ((OperationNode) previousNode).operatorToken().operator();
-                    if (currentOperator.getOperatorPriority().getLevel() == previousOperator.getOperatorPriority().getLevel()) {
-                        previousNode = new OperationNode(operatorToken, previousNode, rightChild);
-                        continue;
-                    }
-                    if (currentOperator.getOperatorPriority().getLevel() > previousOperator.getOperatorPriority().getLevel()) {
-                        Node previousRightChild = ((OperationNode) previousNode).rightChild();
-                        previousNode = ((OperationNode) previousNode).copyWithSpecifiedRightChild(
-                                new OperationNode(operatorToken, previousRightChild, rightChild)
-                        );
-                        continue;
-                    }
+                    previousNode = buildOperationNode((OperationNode) previousNode, operatorToken, rightChild);
+                } else {
+                    previousNode = new OperationNode(operatorToken, previousNode, rightChild);
                 }
-                previousNode = new OperationNode(operatorToken, previousNode, rightChild);
             }
         }
+    }
+
+    private OperationNode buildOperationNode(OperationNode previousNode, OperatorToken operatorToken, Node rightChild) {
+        Operator currentOperator = operatorToken.operator();
+        Operator previousOperator = previousNode.operatorToken().operator();
+
+        int currentOperatorPriorityLevel = currentOperator.getOperatorPriority().getLevel();
+        int previousOperatorPriorityLevel = previousOperator.getOperatorPriority().getLevel();
+
+        if (currentOperatorPriorityLevel == previousOperatorPriorityLevel) {
+            return new OperationNode(operatorToken, previousNode, rightChild);
+        }
+
+        if (currentOperatorPriorityLevel > previousOperatorPriorityLevel) {
+            Node previousRightChild = previousNode.rightChild();
+            Node modifiedRightChild = new OperationNode(operatorToken, previousRightChild, rightChild);
+            return previousNode.copyWithSpecifiedRightChild(modifiedRightChild);
+        }
+
+        return new OperationNode(operatorToken, previousNode, rightChild);
     }
 
     private ParenthesisNode buildParenthesisNode(PeekingIterator<Token> tokens) {
         // drop '('
         tokens.next();
-        Node innerNode = doParse(tokens, true);
+        Node innerNode = parse(tokens);
         // drop ')'
         tokens.next();
         return new ParenthesisNode(innerNode);

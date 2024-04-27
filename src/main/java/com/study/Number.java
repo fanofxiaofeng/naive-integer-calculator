@@ -4,8 +4,17 @@ import java.math.BigInteger;
 
 public record Number(BigInteger bigInteger) {
 
-    // todo: Negative integer should be supported in future
-    public static boolean qualified(int codepoint) {
+    public static final int NEGATIVE_SYMBOL = '-';
+
+    public static boolean qualifiedStartCodepoint(int codepoint) {
+        // It indicates that a negative integer appears
+        if (codepoint == NEGATIVE_SYMBOL) {
+            return true;
+        }
+        return qualifiedDigit(codepoint);
+    }
+
+    public static boolean qualifiedDigit(int codepoint) {
         return (codepoint >= '0') && (codepoint <= '9');
     }
 

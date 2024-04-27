@@ -13,32 +13,40 @@ public class LexicalAnalyzer {
 
     public List<Token> analyze(PeekingIterator<Integer> peekingIterator) {
         List<Token> tokens = new ArrayList<>();
+
+        // After ignoring whitespace codepoints, an operator always follows a number or a ')'
+        boolean followedOperatorAllowed = false;
+
         while (peekingIterator.hasNext()) {
             int peek = peekingIterator.peek();
             if (whitespace(peek)) {
-                // drop this codepoint
+                // drop this whitespace codepoint
                 peekingIterator.next();
                 continue;
             }
+
             if (Parenthesis.qualified(peek)) {
                 Parenthesis parenthesis = Parenthesis.build(peekingIterator.next());
                 tokens.add(tokenBuilder.build(parenthesis));
+                followedOperatorAllowed = (parenthesis == Parenthesis.RIGHT);
                 continue;
             }
 
-            if (Operator.qualified(peek)) {
+            if (followedOperatorAllowed && Operator.qualified(peek)) {
                 Operator operator = Operator.build(peekingIterator.next());
                 tokens.add(tokenBuilder.build(operator));
+                followedOperatorAllowed = false;
                 continue;
             }
 
-            if (Number.qualified(peek)) {
+            if (Number.qualifiedStartCodepoint(peek)) {
                 Number number = numberBuilder.build(peekingIterator);
                 tokens.add(tokenBuilder.build(number));
+                followedOperatorAllowed = true;
                 continue;
             }
 
-            String message = String.format("Unexpected codepoint: %s", StringUtil.fromCodepoint(peek));
+            String message = String.format("Unexpected codepoint: [%s]", StringUtil.fromCodepoint(peek));
             throw new IllegalArgumentException(message);
         }
 

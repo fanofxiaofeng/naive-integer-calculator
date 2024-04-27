@@ -7,9 +7,14 @@ import java.math.BigInteger;
 public class NumberBuilder {
     public Number build(PeekingIterator<Integer> peekingIterator) {
         StringBuilder stringBuilder = new StringBuilder();
-        while (peekingIterator.hasNext() && Number.qualified(peekingIterator.peek())) {
+        if (peekingIterator.hasNext() && peekingIterator.peek() == Number.NEGATIVE_SYMBOL) {
             stringBuilder.append(StringUtil.fromCodepoint(peekingIterator.next()));
         }
+
+        while (peekingIterator.hasNext() && Number.qualifiedDigit(peekingIterator.peek())) {
+            stringBuilder.append(StringUtil.fromCodepoint(peekingIterator.next()));
+        }
+
         BigInteger bigInteger = new BigInteger(stringBuilder.toString());
         return new Number(bigInteger);
     }

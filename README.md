@@ -2,10 +2,6 @@
 
 A very simple calculator that only support `+-*/` and `()` for integers
 
-## todo
-
-Currently negative integer is not supported in the input (the result can be negative)
-
 ## Usage
 
 ```bash

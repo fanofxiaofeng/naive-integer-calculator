@@ -31,7 +31,7 @@ public class Main {
             // Step 3: Calculate with parse result
             Calculator calculator = new Calculator();
             BigInteger result = calculator.calculate(node);
-            
+
             System.out.println(result);
         }
     }
